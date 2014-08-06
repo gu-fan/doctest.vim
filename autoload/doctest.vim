@@ -1,27 +1,86 @@
 "=============================================
-"    Name: doctest.vim
 "    File: doctest.vim
-" Summary: tests 
-"  Author: Rykka G.F
-"  Update: 2012-10-13
+"  Author: Rykka <rykka#foxmail.com>
+"  Update: 2014-08-07
 "=============================================
 let s:cpo_save = &cpo
 set cpo-=C
+" Example " {{{3
+"
+" >>> echo 5+1
+" 6
+"
+" will return:
+" Try:
+"   1+1
+" Expected:
+"   2
+" ok
+"
+" ----------
+"
+" >>> echo 1+1*1.5
+" 2.5
+"
+" will return:
+" Try:
+"   1+1
+" Expected:
+"   3
+" Got:
+"   2
+" Failed
+"
+" ----------
+"
+" >>> echom AN_UNDEFINED_VARIABLE
+" E121
+"
+" Try:
+"   echo AN_UNDEFINED_VARIABLE
+" ok
+"
+" ----------
+"
+" >>> echo 1+1=3
+" 0
+"
+" Try:
+"   echo 1+1=3
+" Expected:
+"   0
+" Got:
+"   2
+"   E15
+" Fail!
+"
+" ----------
+"
+" >>> let a = 3
+" >>> let b = 4
+" >>> echo a+b
+" 7
+"
+" Try:
+" let a = 3
+" let b = 4
+" echo a+b
+" PASS!
 
 " DocTest {{{1
 fun! s:auto_mkdir(path) "{{{
-    if !isdirectory(fnamemodify(a:path,':h')) 
+    if !isdirectory(fnamemodify(a:path,':h'))
         call mkdir(fnamemodify(a:path,':h'),'p')
     endif
 endfun "}}}
 fun! s:is_cmd_line(line) "{{{
-    return a:line =~ '^\s*"\s>>>\s' 
+    return a:line =~ '^\s*"\s>>>\s'
 endfun "}}}
 fun! s:is_expc_line(line) "{{{
     return a:line =~ '^\s*"\s*\S'
 endfun "}}}
 fun! s:is_end_line(line) "{{{
-    return a:line =~ '\s*"\s*$' || a:line !~'^\s*"' 
+    return a:line =~ '\s*"\s*$' || a:line !~'^\s*"'
 endfun "}}}
 fun! s:get_plain_cmd(cmd_line) "{{{
     return "    ". matchstr(a:cmd_line, '^\s*"\s>>>\s\zs.*')
@@ -30,82 +89,33 @@ fun! s:get_plain_expc(expc_line) "{{{
     return "    ". matchstr(a:expc_line, '^\s*"\s\zs.*')
 endfun "}}}
 
+fun! doctest#cmd(bang,...) "{{{
+    " Use for cmd with <bang>
+    let input_file = a:0 ? a:1 : ""
+    let output_file =  a:0 > 1 ? a:2 : ""
+    let verbose = a:bang =='!' ? 1 : g:doctest_verbose_level
+    call doctest#at(input_file,output_file,verbose)
+endfun "}}}
+
 fun! doctest#at(...) "{{{
     " Test with the document.
     "
     " @params:
     " a:1 input file or current buffer, empty for current buffer
     " a:2 output file or message , empty for messgae
-    " a:3 verbose level (0,1,2)
+    " a:3 verbose level (0,1)
     "
-    " exception will only needs it's ErrorNumber if it's vim exception
-    " exception will show when verbose level is 2
+    " Exception will only needs it's ErrorNumber if it's vim exception
+    " Exception will show when verbose level is 2
     "
     "
-    " Example " {{{3
-    "
-    " >>> echo 5+1
-    " 6
-    "
-    " will return:
-    " Try:
-    "   1+1
-    " Expected:
-    "   2
-    " ok
-    "
-    " ----------
-    "
-    " >>> echo 1+1*1.5
-    " 2.5
-    "
-    " will return:
-    " Try:
-    "   1+1
-    " Expected:
-    "   3
-    " Got: 
-    "   2
-    " Failed
-    " 
-    " ----------
-    "
-    " >>> echom AN_UNDEFINED_VARIABLE
-    " E121
-    "
-    " Try:
-    "   echo AN_UNDEFINED_VARIABLE
-    " ok
-    " 
-    " ----------
-    "
-    " >>> echo 1+1=3
-    " 0
-    "
-    " Try:
-    "   echo 1+1=3
-    " Expected:
-    "   0
-    " Got:
-    "   2
-    "   E15
-    " Fail!
-    "
-    " ----------
-    "
-    " >>> let a = 3
-    " >>> let b = 4
-    " >>> echo a+b
-    " 7
-    " 
-    " Try:
-    " let a = 3
-    " let b = 4
-    " echo a+b
-    " OK!
 
     " Init "{{{3
-    let input_file = a:0 ? a:1 : ''
+    let o_t = s:time()
+
+    let input_file = a:0 ? expand(a:1) : ''
+    let output_file =  a:0 > 1 ? expand(a:2) : ""
+    let verbose = a:0> 2 ? a:3 : g:doctest_verbose_level
     let lines = input_file != '' ? readfile(input_file) : getline(1,'$')
 
     let eof = len(lines)
@@ -117,7 +127,8 @@ fun! doctest#at(...) "{{{
     let in_cmd = 0
 
     " Get the test block "{{{3
-    " [[CMDS1, EXPCTS1],[CMDS2,EXPCTS2],...]
+    " [[CMDS1, EXPECTS1,startrow],[CMDS2,EXPECTS2,startrow],...]
+    " CMDS and EXPECTS are a list with multi lines
     let e_cmds =  []
     let e_expects = []
     for i in range(eof)
@@ -127,15 +138,16 @@ fun! doctest#at(...) "{{{
                 let in_block = 1
                 let in_cmd = 1
                 call add(e_cmds, line)
+                let startrow = i+1
             endif
         elseif in_block
             if s:is_cmd_line(line)
                 if in_cmd
                     call add(e_cmds, line)
                 else
-                    " Not in cmd block. 
-                    " save and start a new test_block
-                    call add(test_blocks, [e_cmds, e_expects])
+                    " Not in cmd block, save
+                    call add(test_blocks, [e_cmds, e_expects,startrow])
+                    " start a new test_block
                     let in_cmd = 1
                     let e_cmds =  [line]
                     let e_expects = []
@@ -143,7 +155,7 @@ fun! doctest#at(...) "{{{
             elseif s:is_end_line(line)
                 let in_cmd = 0
                 let in_block = 0
-                call add(test_blocks, [e_cmds, e_expects])
+                call add(test_blocks, [e_cmds, e_expects, startrow])
                 let e_cmds =  []
                 let e_expects = []
             else
@@ -152,12 +164,12 @@ fun! doctest#at(...) "{{{
             endif
         endif
     endfor
-    
+
     " Executing each Test Block and Redir the result "{{{3
-    for [cmds, expects] in test_blocks
+    for [cmds, expects,startrow] in test_blocks
         let cmds = map(cmds, 's:get_plain_cmd(v:val)')
         let expects = map(expects, 's:get_plain_expc(v:val)')
-        
+
         let result_str = ""
         let exception = ""
         let throwpoint = ""
@@ -179,16 +191,26 @@ fun! doctest#at(...) "{{{
             endtry
         endfor
         redir END
+
+        " format results
         let results = map(split(result_str,'\n'),'"    ".v:val')
-        call add(test_results, [cmds, expects, results, [exception, throwpoint]])
+
+        call add(test_results, {
+                    \'cmds':cmds,
+                    \'expects': expects,
+                    \'results':results,
+                    \'exception': exception,
+                    \'throwpoint': throwpoint,
+                    \'startrow': printf("%-6d",startrow)
+                    \})
     endfor
 
-    " Validate and store to log "{{{3
-    for [cmds, expects, results;_] in test_results
-        if len(expects) == len(results)
-            let status = 1
-            for i in range(len(expects))
-                if expects[i] == results[i]
+    " Validate "{{{3
+    for item in test_results
+        if len(item.expects) == len(item.results)
+            let item.status = 1
+            for i in range(len(item.expects))
+                if item.expects[i] == item.results[i]
                     continue
                 else
                     let status = 0
@@ -196,86 +218,87 @@ fun! doctest#at(...) "{{{
                 endif
             endfor
         else
-            let status = 0
+            let item.status = 0
         endif
-        call add(test_logs, status)
     endfor
 
     " Show Test Log "{{{3
-    let verbose = a:0>2 ? a:3 : 0
     let output = []
     let failed = 0
     let passed = 0
-    for i in range(len(test_logs))
-        if test_logs[i] == 1
-            if verbose == 2
-                call add(output, "Try:")
-                call extend(output, test_results[i][0])
-                call add(output, "Expected:")
-                call extend(output, test_results[i][1])
-                call add(output, "OK!")
-                if test_results[i][3][0] =~ '\S'
-                    call add(output, "Exception:")
-                    call extend(output, test_results[i][3])
+
+    for item in test_results
+        if item.status == 1
+            if verbose == 1
+                let o = ["Try::line ".item.startrow."   PASS!"]
+                call extend(o, item.cmds)
+                call add(o, "Expected:")
+                call extend(o, item.expects)
+                if item.exception =~ '\S'
+                    call add(o, "Exception:")
+                    call extend(o, [item.exception,item.throwpoint])
                 endif
-                call add(output, " ")
-            elseif verbose == 1
-                call add(output, "Try:")
-                call extend(output, test_results[i][0])
-                call add(output, "OK!")
-                call add(output, " ")
+                call add(o, " ")
+                call extend(output, o)
+            elseif verbose == 0
+                let o = ["Try::line ".item.startrow."   PASS!"]
+                call extend(output, o)
             endif
             let passed += 1
-        else
-            if verbose == 2
-                call add(output, "Try:")
-                call extend(output, test_results[i][0])
-                call add(output, "Expected:")
-                call extend(output, test_results[i][1])
-                call add(output, "Got:")
-                call extend(output, test_results[i][2])
-                call add(output, "Fail!")
-                if test_results[i][3][0] =~ '\S'
-                    call add(output, "Exception:")
-                    call extend(output, test_results[i][3])
+        elseif item.status == 0
+            if verbose == 1
+                let o = ["Try::line ".item.startrow."   Fail!"]
+                call extend(o, item.cmds)
+                call add(o, "Expected:")
+                call extend(o, item.expects)
+                call add(o, "Got:")
+                call extend(o, item.results)
+                if item.exception =~ '\S'
+                    call add(o, "Exception:")
+                    call extend(o, [item.exception,item.throwpoint])
                 endif
-                call add(output, " ")
-            elseif verbose == 1
-                call add(output, "Try:")
-                call extend(output, test_results[i][0])
-                call add(output, "Got:")
-                call extend(output, test_results[i][2])
-                call add(output, "Fail!")
-                if test_results[i][3][0] =~ '\S'
-                    call add(output, "Exception:")
-                    call extend(output, test_results[i][3])
-                endif
-                call add(output, " ")
-            else
-                call add(output, "Try:")
-                call extend(output, test_results[i][0])
-                call add(output, "Fail!")
-                call add(output, " ")
-            end
+                call add(o, " ")
+                call extend(output, o)
+            elseif verbose == 0
+                let o = ["Try::line ".item.startrow."   Fail!"]
+                call extend(output, o)
+            endif
             let failed += 1
         endif
     endfor
+
+    let e_t = s:time()
+    let time = printf("%.4f",(e_t-o_t))
+    call add(output, " ")
     call add(output, "Total: ".len(test_logs)." tests.")
     call add(output, "Passed:".passed." tests.")
-    call add(output, "Failed:".failed." tests.")
-    
+    if failed > 0
+        call add(output, "Failed:".failed." tests.")
+    endif
+    call add(output, " ")
+    call add(output, "Takes: " . time . " seconds ")
     " Output to file or message "{{{3
-    if a:0 > 1 && a:2 != ""
-        call s:auto_mkdir(a:2)
-        call writefile(output, a:2)
+    if output_file != ''
+        call s:auto_mkdir(output_file)
+        call writefile(output, output_file)
     else
         for out in output
-            if out =~ '^\(Try:\|Expected:\|Got:\|Exception:\|OK!\)$'
-                echohl Title
+            if out =~ '^\(Try:\|Expected:\|Got:\|Exception:\|PASS!\)'
+                if out !~ 'Fail!$'
+                    echohl PreProc
+                    echo out
+                    echohl Normal
+                else
+                    echohl Type
+                    echo out
+                    echohl Normal
+                endif
+            elseif out =~ '^Fail!$\|^Failed:'
+                echohl ErrorMsg
                 echo out
                 echohl Normal
-            elseif out =~ '^Fail!$'
-                echohl ErrorMsg
+            elseif out =~ '^Total:\|^Passed:'
+                echohl Title
                 echo out
                 echohl Normal
             else
@@ -284,7 +307,7 @@ fun! doctest#at(...) "{{{
         endfor
     endif
 
-    return [test_results, test_logs]
+    return {'results':test_results,'passed':passed,'failed':failed,'output':output}
     "}}}3
 
 endfun "}}}
@@ -319,7 +342,7 @@ function! doctest#timer(func,...) "{{{
 endfunction "}}}
 let s:tempname = tempname()
 fun! doctest#log(msg) "{{{
-    
+
     let log =  "Time:". strftime("%Y-%m-%d %H:%M")
     " write time to log.
     let file = s:tempname
@@ -353,7 +376,7 @@ fun! doctest#func_args(func,arg_list) "{{{
     call s:test_func(a:func,a:arg_list)
 endfun "}}}
 fun! s:test_func(func,arg_list) "{{{
-    echo "Func:" a:func 
+    echo "Func:" a:func
     for arg in a:arg_list
         echo "Arg:" arg
         if type(arg) == type([])
