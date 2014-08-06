@@ -29,7 +29,7 @@ With ``:DocTest``,  result would be::
 
 **Command**
 
-``:DocTest [file]``
+``:DocTest[!] [file]``
 
 Test file's vim docs.
 if file is empty, then test current file,
