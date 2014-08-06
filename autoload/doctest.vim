@@ -308,8 +308,7 @@ fun! doctest#start(...) "{{{
         endfor
     endif
 
-    return
-{'results':test_results,'passed':passed,'failed':failed,'output':output,'total':total}
+    return {'results':test_results,'passed':passed,'failed':failed,'output':output,'total':total}
     "}}}3
 
 endfun "}}}
