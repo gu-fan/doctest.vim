@@ -1,4 +1,7 @@
 doctest.vim
 ===========
 
-doctest for vim
+    " So, Test it in Docs
+    >>> echo 1
+    1
+
