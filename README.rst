@@ -1,43 +1,54 @@
 doctest.vim
 ===========
 
-Let's start a DocTest
+Let's start a doctest.
 
 ::
-
+    
+    " A simple one
     " >>> let a = 3
-    " >>> echo a-2
-    " 1
+    " >>> let b = 3
+    " >>> echo a+b
+    " 6
 
-    " To catch error , use it's error number like 'E100'.
-    " >>> echom AN_UNDEFINED_VARIABLE
+    " Catching error, use ErrorNumber like 'E100'.
+    " >>> echom an_undefined_variable
     " E121
     
-    " multi row out put is ok
+    " Multi row output
     " >>> echo "3\n3"
     " 3
     " 3
 
+    " Define a function!
+    " >>> fun! TestNum(i)
+    " >>>   return printf("%06d",a:i)
+    " >>> endfun
+    " >>> echo TestNum(3000)
+    " 003000
+
 With ``:DocTest``,  result would be::
 
-    Try::line 8        PASS!
-    Try::line 12       PASS!
+    Try::line 9        PASS!
     Try::line 15       PASS!
+    Try::line 19       PASS!
+    Try::line 25       PASS!
+ 
+    Total: 4 tests.
+    Passed:4 tests.
+ 
+    Takes: 0.0037 seconds 
 
-    Total: 0 tests.
-    Passed:3 tests.
-
-    Takes: 0.0077 seconds
-
-So it's Passed , Great! :) 
+So Test Passed , Great! :) 
 
 **Command**
 
 ``:DocTest[!] [file]``
 
 Test file's vim docs.
-if file is empty, then test current file,
-if '!' is added , then verbose level set to 1.
+
+if file is empty, test current file,
+if '!' is added , verbose level is 1.
 
 
 **Option**

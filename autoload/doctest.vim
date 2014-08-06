@@ -67,6 +67,7 @@ set cpo-=C
 " echo a+b
 " PASS!
 
+let s:tempfile = tempname()
 " DocTest {{{1
 fun! s:auto_mkdir(path) "{{{
     if !isdirectory(fnamemodify(a:path,':h'))
@@ -111,7 +112,6 @@ fun! doctest#start(...) "{{{
     "
 
     " Init "{{{3
-    let o_t = s:time()
 
     let input_file = a:0 ? expand(a:1) : ''
     let output_file =  a:0 > 1 ? expand(a:2) : ""
@@ -165,6 +165,7 @@ fun! doctest#start(...) "{{{
         endif
     endfor
 
+    let o_t = s:time()
     " Executing each Test Block and Redir the result "{{{3
     for [cmds, expects,startrow] in test_blocks
         let cmds = map(cmds, 's:get_plain_cmd(v:val)')
@@ -173,23 +174,22 @@ fun! doctest#start(...) "{{{
         let result_str = ""
         let exception = ""
         let throwpoint = ""
+        call writefile(cmds, s:tempfile)
         redir => result_str
-        for cmd in cmds
-            try
-                sil exec cmd
-            catch
-                " To handle Exception easier
-                let exception =  v:exception
-                let e_num = matchstr(exception, '^Vim\%((\a\+)\)\=:\zsE\d\+\ze:')
-                if e_num =~ 'E\d\+'
-                    " vim ErrorNumber
-                    sil echo e_num
-                else
-                    sil echo exception
-                endif
-                let throwpoint =  v:throwpoint
-            endtry
-        endfor
+        try
+            sil exe 'so '.s:tempfile
+        catch
+            " To handle Exception easier
+            let exception =  v:exception
+            let e_num = matchstr(exception, '^Vim\%((\a\+)\)\=:\zsE\d\+\ze:')
+            if e_num =~ 'E\d\+'
+                " vim ErrorNumber
+                sil echo e_num
+            else
+                sil echo exception
+            endif
+            let throwpoint =  v:throwpoint
+        endtry
         redir END
 
         " format results
@@ -204,6 +204,7 @@ fun! doctest#start(...) "{{{
                     \'startrow': printf("%-6d",startrow)
                     \})
     endfor
+    let e_t = s:time()
 
     " Validate "{{{3
     for item in test_results
@@ -213,7 +214,7 @@ fun! doctest#start(...) "{{{
                 if item.expects[i] == item.results[i]
                     continue
                 else
-                    let status = 0
+                    let item.status = 0
                     break
                 endif
             endfor
@@ -266,11 +267,11 @@ fun! doctest#start(...) "{{{
             let failed += 1
         endif
     endfor
+    let total = failed + passed
 
-    let e_t = s:time()
     let time = printf("%.4f",(e_t-o_t))
     call add(output, " ")
-    call add(output, "Total: ".len(test_logs)." tests.")
+    call add(output, "Total: ".total." tests.")
     call add(output, "Passed:".passed." tests.")
     if failed > 0
         call add(output, "Failed:".failed." tests.")
@@ -307,7 +308,8 @@ fun! doctest#start(...) "{{{
         endfor
     endif
 
-    return {'results':test_results,'passed':passed,'failed':failed,'output':output}
+    return
+{'results':test_results,'passed':passed,'failed':failed,'output':output,'total':total}
     "}}}3
 
 endfun "}}}
