@@ -1,7 +1,7 @@
 doctest.vim
 ===========
 
-So, Let's start a DocTest
+Let's start a DocTest
 
 ::
 
@@ -28,6 +28,8 @@ With ``:DocTest``,  result would be::
     Passed:3 tests.
 
     Takes: 0.0077 seconds
+
+So it's Passed , Great! :) 
 
 **Command**
 
