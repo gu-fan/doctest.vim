@@ -1,7 +1,7 @@
 doctest.vim
 ===========
 
-**So, Test Vim with DocTests**
+So, Let's start a DocTest
 
 ::
 
@@ -9,9 +9,11 @@ doctest.vim
     " >>> echo a-2
     " 1
 
+    " To catch error , use it's error number like 'E100'.
     " >>> echom AN_UNDEFINED_VARIABLE
     " E121
-
+    
+    " multi row out put is ok
     " >>> echo "3\n3"
     " 3
     " 3
@@ -35,7 +37,6 @@ Test file's vim docs.
 if file is empty, then test current file,
 if '!' is added , then verbose level set to 1.
 
-To catch error , use it's error number like ``E100``.
 
 **Option**
 
@@ -46,13 +47,14 @@ set it to 1 to see more info.
 
 **API**
 
-``doctest#start([input_file, [out_putfile, [verbose_level]]])``
+``doctest#start([input_file, [output_file, [verbose_level]]])``
 
-Returns the test result, you can use in your scripts
-
+Returns a object with test result 
 
 
 **Test vim file**
+
+In your file, add following code.
 
 .. code:: vim
 
@@ -60,4 +62,4 @@ Returns the test result, you can use in your scripts
         call doctest#start()
     endif "}}}
 
-then use ``:so %`` to test.
+Use ``:so %`` to test.
