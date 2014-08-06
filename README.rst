@@ -43,20 +43,20 @@ So Test Passed , Great! :)
 
 **Command**
 
-``:DocTest[!] [file]``
+``:DocTest[!] [input_file] [output_file]``
 
 Test file's vim docs.
 
-if file is empty, test current file,
-if '!' is added , verbose level is 1.
+If file is empty or '%', test current file,
+If '!' is added , verbose level is 1.
 
 
 **Option**
 
 ``g:doctest_verbose_level``
 
-default is 0.
-set it to 1 to see more info.
+Default is 0.
+Set it to 1 to see more info.
 
 **API**
 
