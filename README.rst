@@ -46,7 +46,7 @@ set it to 1 to see more info.
 
 **API**
 
-``doctest#at([input_file, [out_putfile, [verbose_level]]])``
+``doctest#start([input_file, [out_putfile, [verbose_level]]])``
 
 Returns the test result, you can use in your scripts
 
@@ -57,7 +57,7 @@ Returns the test result, you can use in your scripts
 .. code:: vim
 
     if expand('<sfile>:p') == expand('%:p') "{{{
-        call doctest#at('', '', 0)
+        call doctest#start()
     endif "}}}
 
 then use ``:so %`` to test.

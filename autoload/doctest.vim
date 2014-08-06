@@ -94,10 +94,10 @@ fun! doctest#cmd(bang,...) "{{{
     let input_file = a:0 ? a:1 : ""
     let output_file =  a:0 > 1 ? a:2 : ""
     let verbose = a:bang =='!' ? 1 : g:doctest_verbose_level
-    call doctest#at(input_file,output_file,verbose)
+    call doctest#start(input_file,output_file,verbose)
 endfun "}}}
 
-fun! doctest#at(...) "{{{
+fun! doctest#start(...) "{{{
     " Test with the document.
     "
     " @params:
@@ -441,7 +441,7 @@ endfunction "}}}
 
 " Testing "{{{1
 if expand('<sfile>:p') == expand('%:p') "{{{
-    call doctest#at('','',0)
+    call doctest#start()
 endif "}}}
 
 let &cpo = s:cpo_save
