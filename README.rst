@@ -66,6 +66,20 @@ With ``:DocTest``,  result would be::
 
 Test Passed, Great! :) 
 
+Install
+-------
+
+Using NeoBundle or Vundle::
+
+    Bundle "Rykka/doctest.vim"
+
+    or
+
+    NeoBundle "Rykka/doctest.vim"
+
+Configure
+---------
+
 **Command**
 
 ``:DocTest[!] [input_file] [output_file]``
@@ -86,7 +100,7 @@ Set it to 1 to see more info.
 
 ``doctest#start([input_file, [output_file, [verbose_level]]])``
 
-Returns a object with test result 
+Returns an object of test result 
 
 ``doctest#timer(func_name, [[func_arg_list, [exe_time]]])``
 
