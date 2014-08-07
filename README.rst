@@ -27,8 +27,7 @@ So, Let's start a doctest::
     " >>> echo TestNum(3000)
     " 003000
 
-    " Even Script-vars s:
-
+    " Even s:vars and s:fn()
     " >>> let s:k = 5
     " >>> fun! s:test(i)
     " >>>   return printf("%07d",a:i+s:k)
