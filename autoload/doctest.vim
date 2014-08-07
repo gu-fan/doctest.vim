@@ -263,6 +263,11 @@ fun! doctest#start(...) "{{{
 
     " Validate "{{{3
     for item in test_results
+        if item.expects == ['    [TIMER]']
+            let item.status = 10
+            let item.results[0] = substitute(item.results[0], '^\s*','','')
+            continue
+        endif
         if len(item.expects) == len(item.results)
             let item.status = 1
             for i in range(len(item.expects))
@@ -317,9 +322,18 @@ fun! doctest#start(...) "{{{
                 call extend(output, o)
             elseif verbose == 0
                 let o = ["Try::line ".item.startrow."   Fail!"]
+                call add(o, "Got:")
+                call extend(o, item.results)
                 call extend(output, o)
             endif
             let failed += 1
+        elseif item.status == 10
+                let o = ["[TIMER] line ".item.startrow]
+                if verbose == 1
+                    call extend(o, item.cmds)
+                endif
+                call extend(o, item.results)
+                call extend(output, o)
         endif
     endfor
     let total = failed + passed
@@ -332,14 +346,14 @@ fun! doctest#start(...) "{{{
         call add(output, "Failed:".failed." tests.")
     endif
     call add(output, " ")
-    call add(output, "Takes: " . time . " seconds ")
+    call add(output, "Total Time: " . time . " seconds ")
     " Output to file or message "{{{3
     if output_file != ''
         call s:auto_mkdir(output_file)
         call writefile(output, output_file)
     else
         for out in output
-            if out =~ '^\(Try:\|Expected:\|Got:\|Exception:\|PASS!\)'
+            if out =~ '^\(\[TIMER\]\|Try:\|Expected:\|Got:\|Exception:\|PASS!\)'
                 if out !~ 'Fail!$'
                     echohl PreProc
                     echo out
@@ -379,7 +393,7 @@ function! s:time() "{{{
 endfunction "}}}
 function! doctest#timer(func,...) "{{{
     if !exists("*".a:func)
-        call s:debug("[TIMER]: ".a:func." does not exists. stopped")
+        echo "[TIMER] ".a:func." does not exists. stopped"
         return
     endif
     let farg = a:0 ? a:1 : []
@@ -392,7 +406,7 @@ function! doctest#timer(func,...) "{{{
     endfor
     let e_t = s:time()
     let time = printf("%.4f",(e_t-o_t))
-    echom "[TIMER]: " . time . " seconds for exec" a:func num "times. "
+    echom "[TIMER] " . time . " seconds for exec" a:func num "times. "
 
     return rtn
 endfunction "}}}

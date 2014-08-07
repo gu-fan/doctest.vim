@@ -11,7 +11,8 @@ So, Let's start a doctest::
     " >>> echo a+b
     " 6
 
-    " Catching error, use ErrorNumber like 'E100'.
+    " Catching error.
+    " (NOTE:use ErrorNumber like 'E100')
     " >>> echom an_undefined_variable
     " E121
     
@@ -27,7 +28,7 @@ So, Let's start a doctest::
     " >>> echo TestNum(3000)
     " 003000
 
-    " Even s:vars and s:fn()
+    " s:vars and s:fn()
     " >>> let s:k = 5
     " >>> fun! s:test(i)
     " >>>   return printf("%07d",a:i+s:k)
@@ -35,18 +36,29 @@ So, Let's start a doctest::
     " >>> echo s:test(3000)
     " 0003005
 
+    " Timing something
+    " (NOTE: no s:fn function in timer)
+    " >>> fun! Work()
+    " >>>   let a = 342349.3429*123499.34239/3438923.43
+    " >>> endfun
+    " >>> call doctest#timer("Work", [], 10000)
+    " [TIMER]
+
 With ``:DocTest``,  result would be::
 
-    Try::line 11       PASS!
-    Try::line 17       PASS!
-    Try::line 21       PASS!
-    Try::line 26       PASS!
-    Try::line 34       PASS!
- 
+    Try::line 9        PASS!
+    Try::line 16       PASS!
+    Try::line 20       PASS!
+    Try::line 25       PASS!
+    Try::line 32       PASS!
+    [TIMER] line 41    
+    [TIMER] 0.0637 seconds for exec Work 10000 times. 
+     
     Total: 5 tests.
     Passed:5 tests.
- 
-    Takes: 0.0037 seconds 
+
+    Total Time: 0.0658 seconds 
+     
 
 Test Passed, Great! :) 
 
