@@ -1,7 +1,7 @@
 doctest.vim
 ===========
 
-:version: 0.9
+:version: 0.95
 
 So, Let's start a doctest::
     
