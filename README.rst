@@ -3,9 +3,7 @@ doctest.vim
 
 :version: 0.9
 
-Let's start a doctest.
-
-::
+So, Let's start a doctest::
     
     " A simple one
     " >>> let a = 3
@@ -29,29 +27,38 @@ Let's start a doctest.
     " >>> echo TestNum(3000)
     " 003000
 
+    " Even Script-vars s:
+
+    " >>> let s:k = 5
+    " >>> fun! s:test(i)
+    " >>>   return printf("%07d",a:i+s:k)
+    " >>> endfun
+    " >>> echo s:test(3000)
+    " 0003005
+
 With ``:DocTest``,  result would be::
 
-    Try::line 9        PASS!
-    Try::line 15       PASS!
-    Try::line 19       PASS!
-    Try::line 25       PASS!
+    Try::line 11       PASS!
+    Try::line 17       PASS!
+    Try::line 21       PASS!
+    Try::line 26       PASS!
+    Try::line 34       PASS!
  
-    Total: 4 tests.
-    Passed:4 tests.
+    Total: 5 tests.
+    Passed:5 tests.
  
     Takes: 0.0037 seconds 
 
-So Test Passed , Great! :) 
+Test Passed, Great! :) 
 
 **Command**
 
 ``:DocTest[!] [input_file] [output_file]``
 
-Test file's vim docs.
+DocTest with file.
 
-If file is empty or '%', test current file,
-If '!' is added , verbose level is 1.
-
+If file is empty or '%', test current file ,
+If '!' is added, verbose level is 1.
 
 **Option**
 
@@ -78,3 +85,4 @@ In your file, add following code.
     endif "}}}
 
 Use ``:so %`` to test.
+

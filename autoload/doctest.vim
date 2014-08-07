@@ -5,6 +5,7 @@
 "=============================================
 let s:cpo_save = &cpo
 set cpo-=C
+let s:test =123123
 " Example " {{{3
 "
 " >>> echo 5+1
@@ -38,21 +39,19 @@ set cpo-=C
 "
 " Try:
 "   echo AN_UNDEFINED_VARIABLE
-" ok
+" PASS!
 "
 " ----------
 "
 " >>> echo 1+1=3
-" 0
+" 2
+" E15
 "
 " Try:
 "   echo 1+1=3
 " Expected:
-"   0
-" Got:
 "   2
 "   E15
-" Fail!
 "
 " ----------
 "
@@ -66,8 +65,20 @@ set cpo-=C
 " let b = 4
 " echo a+b
 " PASS!
+"
 
-let s:tempfile = tempname()
+let s:test = 1
+
+" >>> echo s:test
+" 1
+
+fun! s:test()
+    return 1
+endfun
+
+" >>> echo s:test()
+" 1
+
 " DocTest {{{1
 fun! s:auto_mkdir(path) "{{{
     if !isdirectory(fnamemodify(a:path,':h'))
@@ -84,8 +95,17 @@ fun! s:is_end_line(line) "{{{
     return a:line =~ '\s*"\s*$' || a:line !~'^\s*"'
 endfun "}}}
 fun! s:get_plain_cmd(cmd_line) "{{{
-    return "    ". matchstr(a:cmd_line, '^\s*"\s>>>\s\zs.*')
+    let cmd_line = "    ". matchstr(a:cmd_line, '^\s*"\s>>>\s\zs.*')
+    " change s: func to <SNR>_XXX
+    " change s: var to g:_SNR.XXX
+    
+    let n = g:_SNR.N
+    let cmd_line = substitute(cmd_line, '\(^\|\W\)\zss:\ze\(\w\+(\)\@=','<SNR>'.n.'_', 'g')
+    " XXX: '\_s' here not work, use '$\|\s' works
+    let cmd_line = substitute(cmd_line, '\(^\|\W\)\zss:\ze\w\+\(\W\|$\)\@=','g:_SNR.'.n.'.', 'g')
+    return cmd_line
 endfun "}}}
+
 fun! s:get_plain_expc(expc_line) "{{{
     return "    ". matchstr(a:expc_line, '^\s*"\s\zs.*')
 endfun "}}}
@@ -98,6 +118,24 @@ fun! doctest#cmd(bang,...) "{{{
     call doctest#start(input_file,output_file,verbose)
 endfun "}}}
 
+let s:tempfile = tempname()
+let s:tempsrc = tempname()
+let g:_SNR= {}
+fun! doctest#nop()
+endfun
+fun! s:sub_nop(line) "{{{
+    return substitute(a:line, 'doctest#start', 'doctest#nop','g')
+endfun "}}}
+fun! s:hook_var(lines) "{{{
+    let lines = map(a:lines,'s:sub_nop(v:val)')
+    let hook = ["fun! s:SID()",
+        \"return matchstr(expand('<sfile>'), '<SNR>\\zs\\d\\+\\ze_SID$')",
+        \"endfun",
+        \"let g:_SNR.N = s:SID()",
+        \"let g:_SNR[s:SID()] = s:",
+        \]
+    return extend(lines, hook)
+endfun "}}}
 fun! doctest#start(...) "{{{
     " Test with the document.
     "
@@ -114,9 +152,25 @@ fun! doctest#start(...) "{{{
     " Init "{{{3
 
     let input_file = a:0 ? expand(a:1) : ''
+    let input_file = input_file=='' ?  expand('%') : expand(input_file)
     let output_file =  a:0 > 1 ? expand(a:2) : ""
     let verbose = a:0> 2 ? a:3 : g:doctest_verbose_level
-    let lines = input_file != '' ? readfile(input_file) : getline(1,'$')
+    let lines = readfile(input_file) 
+    
+    " if ft is vim , source it to get 's:' vars and fns
+    " Dont's source myself or run doctest#start
+    if input_file == 'doctest.vim'
+        let g:_SNR.N = s:SID()
+        let g:_SNR[s:SID()] = s:
+    elseif input_file =~ '\.vim$\|\.vimrc$' 
+        let lines = s:hook_var(lines)
+        call writefile(lines, s:tempsrc)
+        exe "noa so ".s:tempsrc
+    else
+        let n = doctest#nop#SID()
+        let g:_SNR.N = n
+        let g:_SNR[n] = {}
+    endif
 
     let eof = len(lines)
     let [b_bgn, b_end] = [0, 0]
@@ -166,6 +220,7 @@ fun! doctest#start(...) "{{{
     endfor
 
     let o_t = s:time()
+
     " Executing each Test Block and Redir the result "{{{3
     for [cmds, expects,startrow] in test_blocks
         let cmds = map(cmds, 's:get_plain_cmd(v:val)')
@@ -428,6 +483,7 @@ fun! doctest#show_obj() "{{{
     endif
 endfun "}}}
 
+
 fun! s:SID() "{{{
     return matchstr(expand('<sfile>'), '<SNR>\zs\d\+\ze_SID$')
 endfun "}}}
@@ -439,6 +495,7 @@ function! doctest#stub1() "{{{
 endfunction "}}}
 function! doctest#stub2() "{{{
 endfunction "}}}
+
 
 " Testing "{{{1
 if expand('<sfile>:p') == expand('%:p') "{{{
