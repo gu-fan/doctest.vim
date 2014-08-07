@@ -1,6 +1,10 @@
 doctest.vim
 ===========
 
+    Besides TDD & BDD , What about DDD (Doc Driven Dev) :)
+
+    -- doctest.vim
+
 :version: 0.95
 
 So, Let's start a doctest::
