@@ -84,6 +84,10 @@ Set it to 1 to see more info.
 
 Returns a object with test result 
 
+``doctest#timer(func_name, [[func_arg_list, [exe_time]]])``
+
+Execute func_name with func_arg_list by exe_time.
+
 
 **Test vim file**
 

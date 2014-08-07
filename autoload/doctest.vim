@@ -393,11 +393,11 @@ function! s:time() "{{{
 endfunction "}}}
 function! doctest#timer(func,...) "{{{
     if !exists("*".a:func)
-        echo "[TIMER] ".a:func." does not exists. stopped"
+        echom "[TIMER] ".a:func." does not exists. stopped"
         return
     endif
     let farg = a:0 ? a:1 : []
-    let num  = a:0>1 ? a:2 : 1
+    let num  = a:0>1 ? a:2 : 100
 
     let o_t = s:time()
 
