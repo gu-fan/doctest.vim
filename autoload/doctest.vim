@@ -119,7 +119,7 @@ fun! doctest#cmd(bang,...) "{{{
 endfun "}}}
 
 let s:tempfile = tempname()
-let s:tempsrc = tempname()
+let s:tempdir = fnamemodify(s:tempfile, ':p:h')
 let g:_SNR= {}
 fun! doctest#nop()
 endfun
@@ -164,8 +164,10 @@ fun! doctest#start(...) "{{{
         let g:_SNR[s:SID()] = s:
     elseif input_file =~ '\.vim$\|\.vimrc$' 
         let lines = s:hook_var(lines)
-        call writefile(lines, s:tempsrc)
-        exe "noa so ".s:tempsrc
+        let fname = fnamemodify(input_file, ':t')
+        let tmp_f = s:tempdir .'/'. fname
+        call writefile(lines, tmp_f)
+        exe "noa so ".tmp_f
     else
         let n = doctest#nop#SID()
         let g:_SNR.N = n
